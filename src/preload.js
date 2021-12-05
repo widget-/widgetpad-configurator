@@ -52,7 +52,7 @@ contextBridge.exposeInMainWorld('ipc_serial', {
 
   /** @param {(SerialData) => void} handler */
   setupSerialResponseHandler: function (handler) {
-    ipcRenderer.on('serial-receive-data', handler);
+    ipcRenderer.on('serial-receive-data', (_, data) => handler(data));
   }
 
 });

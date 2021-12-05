@@ -24,22 +24,29 @@ import { lightBlue, blueGrey } from "@mui/material/colors";
 import SerialSelector from "./components/SerialSelector";
 import SerialConnection from './services/SerialConnection';
 
+const framerate = 1;
+
 class App extends React.Component {
   constructor(props) {
     super(props);
     this.state = {
       editing: false,
-      serialConnected: false
+      serialConnected: false,
+      padConfig: {},
+      padValues: {}
     };
 
     this.timer = null;
 
+    this.messagesReceived = 0;
     this.serialConnection = new SerialConnection();
-    this.serialConnection.onConnectionStateChange(() => this.setState({
-      serialConnected: this.serialConnection.connected
-    }));
-    this.serialConnection.addSerialDataHandler(this.serialDataHandler);
   }
+
+  componentDidMount = () => {
+    console.log("Component mounted");
+    this.serialConnection.onConnectionStateChange(this.handleSerialConnectionStateChange);
+    this.serialConnection.addSerialDataHandler((data) => this.serialDataHandler(data));
+  };
 
   static theme = createTheme({
     palette: {
@@ -53,13 +60,60 @@ class App extends React.Component {
     }
   });
 
-  serialDataHandler = (data) => {
-    console.log(data);
+  handleSerialConnectionStateChange = async () => {
+    this.setState({
+      serialConnected: this.serialConnection.isConnected()
+    });
+    if (this.serialConnection.isConnected()) {
+      await this.serialConnection.sendData({ "message": "requestConfig", "minified": true });
+      this.startSerialData();
+    } else {
+      if (this.timer) {
+        clearInterval(this.timer);
+      }
+      this.setState({
+        padValues: {},
+        padConfig: {}
+      });
+    }
   };
 
-  startSerialData = () => {
-    // this.timer = setInterval()
-    // this.serialConnection.
+  serialDataHandler = (data) => {
+    console.log(++this.messagesReceived, data.message, data);
+
+    const message = data.message;
+    delete data.message;
+
+    if (message === "responseValues") {
+      this.setState({
+        padValues: {
+          panels: data.panels,
+          buttons: data.buttons
+        }
+      });
+    }
+
+    if (message === "responseConfig") {
+      this.setState({
+        padConfig: data
+      });
+    }
+  };
+
+  startSerialData = async () => {
+    if (this.timer) {
+      clearInterval(this.timer);
+    }
+    await this.serialConnection.sendData({
+      message: "requestConfig",
+      pretty: false,
+      minified: false
+    });
+    this.timer = setInterval(() => this.serialConnection.sendData({
+      message: "requestValues",
+      pretty: false,
+      minified: false
+    }), Math.floor(1000 / framerate)); // 60fps
   };
 
   handleSerialConnectButtonClick = () => {
@@ -69,17 +123,33 @@ class App extends React.Component {
   handleSerialDisconnectButtonClick = () => {
     this.serialConnection.disconnect();
   };
-
+  
   handleEditButtonClick = () => {
     this.setState({ editing: true });
   };
 
-  handleSaveButtonClick = () => {
+  handleCommitThresholdButtonClick = () => {
     this.setState({ editing: false });
   };
 
-  handleCancelButtonClick = () => {
-    this.setState({ editing: false });
+  handleCancelThresholdButtonClick = () => {
+    const newState = { ...this.state, editing: false };
+    this.state.padConfig.panels.forEach((_, panelIndex) => {
+      this.state.padConfig.panels[panelIndex].sensors.forEach((_, sensorIndex) => {
+        if (newState.padConfig.panels?.[panelIndex]?.sensors?.[sensorIndex]?.threshold) {
+          newState.padConfig.panels[panelIndex].sensors[sensorIndex].threshold = newState.padValues.panels?.[panelIndex]?.sensors?.[0]?.threshold;
+        }
+      });
+    });
+    this.setState(newState);
+  };
+
+  onThresholdChange = (value, panelIndex, sensorIndex) => {
+    const padConfig = { ...this.state.padConfig };
+    padConfig.panels[panelIndex].sensors[sensorIndex].threshold = value;
+    this.setState({
+      padConfig: padConfig
+    });
   };
 
   render() {
@@ -110,20 +180,21 @@ class App extends React.Component {
                 </Tooltip>
               }
 
-              <Typography sx={ { flex: 1 } }/> {/*using it as a spacer for now*/ }
+              {/*using this as a spacer for now*/ }
+              <Typography sx={ { flex: 1 } }/>
 
               { this.state.editing ?
                 <div>
                   <IconButton
                     size="large"
                     color="error"
-                    onClick={ this.handleCancelButtonClick }>
+                    onClick={ this.handleCancelThresholdButtonClick }>
                     <CancelIcon/>
                   </IconButton>
                   <IconButton
                     size="large"
                     color="success"
-                    onClick={ this.handleSaveButtonClick }>
+                    onClick={ this.handleCommitThresholdButtonClick }>
                     <CheckIcon/>
                   </IconButton>
                 </div> :
@@ -141,7 +212,12 @@ class App extends React.Component {
             </Toolbar>
           </AppBar>
           <Card>
-            <Main editing={ this.state.editing }/>
+            <Main
+              editing={ this.state.editing }
+              padConfig={ this.state.padConfig }
+              padValues={ this.state.padValues }
+              onThresholdChange={ (value, panelIndex, senorIndex) =>
+                this.onThresholdChange(value, panelIndex, senorIndex) }/>
           </Card>
         </Paper>
       </ThemeProvider>

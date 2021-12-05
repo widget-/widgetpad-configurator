@@ -9,7 +9,7 @@ class SerialConnection {
 
   connected: false;
   onConnectionStateChangeCallback: () => {};
-
+  
   async listPorts(): Promise<SerialPort.PortInfo[]> {
     try {
       this.availablePorts = await window.ipc_serial.listSerialPorts() ?? [];
@@ -59,11 +59,19 @@ class SerialConnection {
   }
 
   async sendData(data) {
-    await window.ipc_serial.sendSerialData(data);
+    await window.ipc_serial.sendSerialData(JSON.stringify(data));
   }
 
   addSerialDataHandler(handler) {
-    window.ipc_serial.setupSerialResponseHandler(handler);
+    window.ipc_serial.setupSerialResponseHandler((data) => {
+      // convert to object if possible
+      try {
+        let o = JSON.parse(data);
+        handler(o);
+      } catch {
+        handler(data);
+      }
+    });
   }
 }
 

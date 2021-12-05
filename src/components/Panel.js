@@ -1,67 +1,89 @@
 import * as React from 'react';
-import {Slider} from "@mui/material";
+import { Slider } from "@mui/material";
 
-const panelWidth = 200;
 const panelHeight = 500;
-
+// this is needed for Slider.value because React will think
+// that the slider is an uncontrolled component before
+// its props are properly initialized:
+const defaultThreshold = 100;
 
 class Panel extends React.Component {
   static defaultProps = {
-    value: 0,
-    threshold: 100,
+    sensors: [{
+      value: 0,
+      threshold: defaultThreshold,
+      pressed: false
+    }],
     max: 1024,
+    pressed: false,
     onChange: null,
-    onChangeValue: null,
     editing: false
   };
 
   render() {
     return (
-      <div>
-        <input type="range" min="0" max={ this.props.max }
-               onChange={ $event => this.props.onChangeValue?.($event.target.value) }
-               style={ {
-                 width: `${ panelWidth }px`,
-                 display: "block",
-                 margin: "10px auto"
-               } }/>
-
-        <Slider orientation="vertical"
-                max={ this.props.max }
-                value={ this.props.threshold }
-                onChange={ $event => this.props.onChange?.($event.target.value) }
-                style={ {
-                  height: panelHeight,
-                  width: panelWidth
-                } }
-                sx={ {
-                  '& .MuiSlider-rail': {
-                    backgroundColor: this.props.editing ? "secondary.500" : "secondary.700"
-                  },
-                  '& .MuiSlider-track': {
-                    backgroundColor: this.props.value > this.props.threshold ? "primary.main" : "primary.900",
-                    height: `${ this.props.value / this.props.max * 100 }% !important`,
-                    minHeight: "12px",
-                    transition: "none",
-                    "display": "block",
-                  },
-                  '& .MuiSlider-thumb': {
-                    width: "100%",
-                    height: "4px",
-                    borderRadius: "2px"
-                  }
-                } }
-                disabled={ !this.props.editing }
-                valueLabelDisplay="auto"
-                track={ false }
-        />
-
-        {/*, "-webkit-appearance": "slider-vertical"*/ }
-        {/*<Meter value={this.props.value} max={this.props.max} threshold={this.props.threshold} width={panelWidth}*/ }
-        {/*       height={panelHeight}/>*/ }
+      <div style={ {
+        flex: "1 1 150px"
+      } }>
+        { this.props.sensors.map(({ value, threshold, pressed }, index) => {
+          const first = (index === 0);
+          const last = (index === this.props.sensors.length - 1);
+          return <div style={ {
+            display: "inline-block",
+            position: "relative",
+            width: 100 / this.props.sensors.length + "%"
+            // border: "1px solid red" // debugging...
+          } }>
+            <div style={ { position: "absolute", top: 20, left: 0, right: 0, textAlign: "center", fontSize: 24 } }>
+              { value }<br/>
+              ({ threshold })
+            </div>
+            <Slider orientation="vertical"
+                    max={ this.props.max }
+                    value={ this.props.sensors[index].threshold ?? defaultThreshold }
+                    onChange={ $event => this.props.onChange?.($event.target.value, index) }
+                    style={ {
+                      height: panelHeight,
+                      width: `calc(100% - ${ 20 - (first ? 10 : 0) - (last ? 10 : 0) }px)`
+                    } }
+                    sx={ {
+                      mt: 2,
+                      p: 0,
+                      ml: (index === 0) ? "10px" : 0,
+                      mr: (index === this.props.sensors.length - 1) ? "10px" : 0,
+                      borderTopLeftRadius: first ? "12px" : 0,
+                      borderBottomLeftRadius: first ? "12px" : 0,
+                      borderTopRightRadius: last ? "12px" : 0,
+                      borderBottomRightRadius: last ? "12px" : 0,
+                      '& .MuiSlider-rail': {
+                        backgroundColor: this.props.editing ? "secondary.500" : "secondary.700"
+                        , width: "100%"
+                      },
+                      '& .MuiSlider-track': {
+                        backgroundColor: pressed ? "primary.main" : "primary.900",
+                        height: `${ value / this.props.max * 100 }% !important`,
+                        width: "100%",
+                        border: "none",
+                        minHeight: "12px",
+                        transition: "none",
+                        display: "block"
+                      },
+                      '& .MuiSlider-thumb': {
+                        width: "100%",
+                        height: "4px",
+                        borderRadius: 0
+                      }
+                    } }
+                    disabled={ !this.props.editing }
+                    valueLabelDisplay="auto"
+                    track={ false }
+            />
+          </div>;
+        })
+        }
       </div>
     );
   }
 }
 
-export default Panel
+export default Panel;

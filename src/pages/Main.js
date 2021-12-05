@@ -4,52 +4,36 @@ import Panel from '../components/Panel';
 
 class Main extends React.Component {
   static defaultProps = {
-    editing: false
+    editing: false,
+    padConfig: {},
+    padValues: {},
+    onThresholdChange: null
   };
 
-  constructor(props) {
-    super(props);
-    this.state = {
-      panels: [
-        {
-          value: 0, threshold: 100
-        }, {
-          value: 0, threshold: 100
-        }, {
-          value: 0, threshold: 100
-        }, {
-          value: 0, threshold: 100
-        }
-      ]
-    };
-  }
-
-  updatePanelValue(value, index) {
-    const panels = [...this.state.panels];
-    panels[index].value = +value;
-    this.setState({ panels: panels });
-  }
-
-  updatePanelThreshold(value, index) {
-    const panels = [...this.state.panels];
-    panels[index].threshold = +value;
-    this.setState({ panels: panels });
+  updatePanelThreshold(value, panelIndex, sensorIndex) {
+    this.props.onThresholdChange?.(value, panelIndex, sensorIndex);
   }
 
   render() {
-    return <div>
-      <div style={ { display: "flex", flexWrap: "wrap" } }>
-        {
-          this.state.panels.map((panel, index) =>
-            <Panel value={ panel.value }
-                   max={ 1024 }
-                   threshold={ panel.threshold }
-                   onChange={ (val) => this.updatePanelThreshold(val, index) }
-                   onChangeValue={ (val) => this.updatePanelValue(val, index) }
-                   key={ index }
-                   editing={ this.props.editing }/>)
-        }</div>
-    </div>;
+    let key = 0;
+    return <div style={ { display: "flex", flexWrap: "wrap", padding: "0 10px" } }>
+      {
+        this.props.padConfig.panels?.map((panel, panelIndex) => {
+
+          const sensors = panel.sensors?.map((sensorConfig, sensorIndex) => ({
+            value: this.props.padValues.panels?.[panelIndex]?.sensors[sensorIndex]?.value,
+            pressed: this.props.padValues.panels?.[panelIndex]?.sensors[sensorIndex]?.pressed,
+            threshold: sensorConfig.threshold
+          }));
+          return <Panel
+            max={ 1024 }
+            sensors={ sensors }
+            onChange={ (val, sensorIndex) => this.updatePanelThreshold(val, panelIndex, sensorIndex) }
+            key={ key++ }
+            editing={ this.props.editing }
+          />;
+        })
+      }</div>;
   }
 }
 

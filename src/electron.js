@@ -27,7 +27,7 @@ function createWindow() {
 
   // and load the index.html of the app.
   // win.loadFile("index.html");
-  win.loadURL(
+  void win.loadURL(
     isDev
       ? "http://localhost:3000"
       : `file://${ path.join(__dirname, "../build/index.html") }`
@@ -61,7 +61,7 @@ app.on("window-all-closed", () => {
 });
 
 app.on("activate", () => {
-  // On macOS it's common to re-create a window in the app when the
+  // On macOS, it's common to re-create a window in the app when the
   // dock icon is clicked and there are no other windows open.
   if (BrowserWindow.getAllWindows().length === 0) {
     createWindow();
@@ -76,7 +76,7 @@ let serialConnection = null;
 /** @type {?SerialPort.parsers.Readline} serialConnection */
 let readlineParser = null;
 
-ipcMain.on("serial-list-request", async (event, arg) => {
+ipcMain.on("serial-list-request", async (event) => {
   try {
     const list = await SerialPort.list();
     event.sender.send('serial-list-response', list);
@@ -87,45 +87,74 @@ ipcMain.on("serial-list-request", async (event, arg) => {
   }
 });
 
+let boundSerialEventListeners = [];
+
 ipcMain.on("serial-connect-request", async (event, arg) => {
-  if (serialConnection) {
+    if (serialConnection?.isOpen) {
+      try {
+        console.log(`Closing existing port ${ serialConnection.path }`);
+        serialConnection.close();
+      } catch (err) {
+        console.error('Couldn\'t close serial connection: ', err);
+      }
+    }
+
+    serialConnection = new SerialPort(arg);
     try {
-      console.log(`Closing existing port ${ serialConnection.path }`);
-      serialConnection.close();
+      await Promise.race([
+        new Promise((resolve) => serialConnection.once('open', resolve)),
+        new Promise((_, reject) => serialConnection.once('error', reject))
+      ]);
+
+      readlineParser = serialConnection.pipe(new Readline());
+
+      const listener = (data) => {
+        console.log("Received data", data);
+        event.sender.send("serial-receive-data", data);
+      };
+      readlineParser.on("data", listener);
+      boundSerialEventListeners.push({ eventType: 'data', listener: listener });
+
+      event.sender.send('serial-connect-response', { response: "ok" });
     } catch (err) {
-      console.error('Couldn\'t close serial connection: ', err);
+      console.error(err);
+      event.sender.send('serial-connect-response', err);
     }
   }
+);
 
-  serialConnection = new SerialPort(arg);
-  try {
-    await Promise.race([
-      new Promise((resolve) => serialConnection.on('open', resolve)),
-      new Promise((_, reject) => serialConnection.on('error', reject))
-    ]);
-
-    readlineParser = serialConnection.pipe(new Readline());
-
-    readlineParser.on("data", (data) => {
-      event.sender.send("serial-receive-data", data);
-    });
-
-    event.sender.send('serial-connect-response', { response: "ok" });
-  } catch (err) {
-    console.error(err);
-    event.sender.send('serial-connect-response', err);
-  }
-});
-
-ipcMain.on("serial-disconnect-request", async (event, arg) => {
-  if (serialConnection) {
+ipcMain.on("serial-disconnect-request", async (event) => {
+  if (serialConnection?.isOpen) {
     try {
       console.log(`Closing existing port ${ serialConnection.path }`);
-      serialConnection.close();
+      try {
+        serialConnection.close();
+      } catch (err) {
+        console.error('Couldn\'t close serial connection: ', err);
+      }
+
+      for (const { eventType, listener } of boundSerialEventListeners) {
+        readlineParser.off(eventType, listener);
+      }
+      boundSerialEventListeners = [];
       event.sender.send('serial-disconnect-response');
     } catch (err) {
       console.error('Couldn\'t close serial connection: ', err);
       event.sender.send('serial-disconnect-response', err);
+    }
+  }
+});
+
+ipcMain.on("serial-data-request", async (event, arg) => {
+  if (serialConnection) {
+    try {
+      console.log('Sending data:', arg);
+      const data = typeof arg === 'string' ? arg : JSON.stringify(arg);
+      serialConnection.write(Buffer.from(data));
+      event.sender.send('serial-data-response');
+    } catch (err) {
+      console.error('Couldn\'t send serial data: ', err);
+      event.sender.send('serial-data-response', err);
     }
   }
 });
