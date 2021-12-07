@@ -22,6 +22,12 @@ class SerialSelector extends React.Component {
     };
   }
 
+  shouldComponentUpdate(nextProps: Readonly<P>, nextState: Readonly<S>, nextContext: any): boolean {
+    return (this.state.currentPort !== nextState.currentPort) ||
+      (this.props.padName !== nextProps.padName) ||
+      (this.state.ports.reduce((prev, curr, idx) => prev || curr !== nextState.ports[idx], false));
+  }
+
   componentDidMount() {
     // send off untracked async function in the background
     void (() => this.refresh())();

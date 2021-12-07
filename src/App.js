@@ -21,6 +21,15 @@ import {
 } from "@mui/icons-material";
 import { lightBlue, blueGrey } from "@mui/material/colors";
 import update from 'immutability-helper';
+import { Provider, useSelector } from 'react-redux';
+
+import store from './actions/store';
+import {
+  selectPadConfig, selectPadName,
+  setPadConfig,
+  setPadThreshold,
+  updatePadConfigFromSettings
+} from './actions/padConfig';
 
 import Main from "./pages/Main";
 import SerialSelector from "./components/SerialSelector";
@@ -195,92 +204,96 @@ class App extends React.Component {
   };
 
   render() {
-    return (
-      <ThemeProvider theme={ App.theme }>
-        <Paper style={ { width: "100%", minHeight: "100vh", margin: 0 } }>
-          <AppBar position="sticky">
-            <Toolbar>
-              <SerialSelector
-                serialConnection={ this.serialConnection }
-                padName={ this.state.padConfig.general?.name }
-              />
+    const padName = useSelector(selectPadName);
 
-              { this.state.serialConnected ?
-                <Tooltip title="Disconnect">
-                  <IconButton
-                    size="large"
-                    color="error"
-                    onClick={ this.handleSerialDisconnectButtonClick }>
-                    <UsbOffIcon/>
-                  </IconButton>
-                </Tooltip>
-                :
-                <Tooltip title="Connect">
+    return (
+      <Provider store={ store }>
+        <ThemeProvider theme={ App.theme }>
+          <Paper style={ { width: "100%", minHeight: "100vh", margin: 0 } }>
+            <AppBar position="sticky">
+              <Toolbar>
+                <SerialSelector
+                  serialConnection={ this.serialConnection }
+                  padName={ padName }
+                />
+
+                { this.state.serialConnected ?
+                  <Tooltip title="Disconnect">
+                    <IconButton
+                      size="large"
+                      color="error"
+                      onClick={ this.handleSerialDisconnectButtonClick }>
+                      <UsbOffIcon/>
+                    </IconButton>
+                  </Tooltip>
+                  :
+                  <Tooltip title="Connect">
+                    <IconButton
+                      size="large"
+                      color="primary"
+                      onClick={ this.handleSerialConnectButtonClick }>
+                      <UsbIcon/>
+                    </IconButton>
+                  </Tooltip>
+                }
+
+                {/*using this as a spacer for now*/ }
+                <Typography sx={ { flex: 1 } }/>
+
+                <Tooltip title="Save configuration to pad">
                   <IconButton
                     size="large"
                     color="primary"
-                    onClick={ this.handleSerialConnectButtonClick }>
-                    <UsbIcon/>
+                    onClick={ this.handleSaveToPadButtonClick }>
+                    <SaveIcon/>
                   </IconButton>
                 </Tooltip>
-              }
 
-              {/*using this as a spacer for now*/ }
-              <Typography sx={ { flex: 1 } }/>
-
-              <Tooltip title="Save configuration to pad">
-                <IconButton
-                  size="large"
-                  color="primary"
-                  onClick={ this.handleSaveToPadButtonClick }>
-                  <SaveIcon/>
-                </IconButton>
-              </Tooltip>
-
-              { this.state.editing ?
-                <div>
+                { this.state.editing ?
+                  <div>
+                    <IconButton
+                      size="large"
+                      color="error"
+                      onClick={ this.handleCancelThresholdButtonClick }>
+                      <CancelIcon/>
+                    </IconButton>
+                    <IconButton
+                      size="large"
+                      color="success"
+                      onClick={ this.handleCommitThresholdButtonClick }>
+                      <CheckIcon/>
+                    </IconButton>
+                  </div> :
                   <IconButton
                     size="large"
-                    color="error"
-                    onClick={ this.handleCancelThresholdButtonClick }>
-                    <CancelIcon/>
-                  </IconButton>
-                  <IconButton
-                    size="large"
-                    color="success"
-                    onClick={ this.handleCommitThresholdButtonClick }>
-                    <CheckIcon/>
-                  </IconButton>
-                </div> :
-                <IconButton
-                  size="large"
-                  onClick={ this.handleEditButtonClick }>
-                  <EditIcon/>
-                </IconButton> }
+                    onClick={ this.handleEditButtonClick }>
+                    <EditIcon/>
+                  </IconButton> }
 
-              <Settings
+                <Settings
+                  padConfig={ this.state.padConfig }
+                  onChange={ this.onSettingsChange }
+                />
+              </Toolbar>
+            </AppBar>
+            <Card>
+              <Main
+                editing={ this.state.editing }
                 padConfig={ this.state.padConfig }
-                onChange={ this.onSettingsChange }
-              />
-            </Toolbar>
-          </AppBar>
-          <Card>
-            <Main
-              editing={ this.state.editing }
-              padConfig={ this.state.padConfig }
-              padValues={ this.state.padValues }
-              onThresholdChange={ (value, panelIndex, senorIndex) =>
-                this.onThresholdChange(value, panelIndex, senorIndex) }/>
-          </Card>
-          <Card>
-            <Typography>
-              {
-                `Serial FPS: ${ this.state.fps?.toFixed?.(1) }`
-              }
-            </Typography>
-          </Card>
-        </Paper>
-      </ThemeProvider>
+                padValues={ this.state.padValues }
+                onThresholdChange={ (value, panelIndex, senorIndex) =>
+                  this.onThresholdChange(value, panelIndex, senorIndex) }/>
+            </Card>
+            <Card>
+              <Typography>
+                {
+                  `Serial FPS: ${ this.state.fps?.toFixed?.(1) }`
+                }
+              </Typography>
+            </Card>
+          </Paper>
+        </ThemeProvider>
+      </Provider>
     );
   }
 }
