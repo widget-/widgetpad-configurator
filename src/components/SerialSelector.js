@@ -7,7 +7,7 @@ import Select from '@mui/material/Select';
 import { IconButton, MenuItem } from "@mui/material";
 import { Refresh } from "@mui/icons-material";
 
-import { selectPadName } from '../actions/padConfig';
+import { selectPadName } from '../slices/padConfig';
 
 /**
  * @param props

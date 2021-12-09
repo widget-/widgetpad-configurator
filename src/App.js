@@ -30,12 +30,12 @@ import {
   selectPadConfig,
   setPadConfig,
   updatePadConfigFromSettings
-} from './actions/padConfig';
+} from './slices/padConfig';
 import {
   clearPadValues,
   selectPadValues,
   setPadValues
-} from './actions/padValues';
+} from './slices/padValues';
 
 import Main from "./pages/Main";
 import SerialSelector from "./components/SerialSelector";

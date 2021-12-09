@@ -1,6 +1,6 @@
 import React from 'react';
 import Panel from '../components/Panel';
-import { selectConfigPanels } from '../actions/padConfig';
+import { selectConfigPanels } from '../slices/padConfig';
 import { useSelector } from 'react-redux';
 
 

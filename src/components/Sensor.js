@@ -5,8 +5,8 @@ import {
   createSelectPadConfigSensors,
   createSelectPadConfigSensorThreshold, selectSensorsCount,
   setPadThreshold
-} from '../actions/padConfig';
-import { createSelectPadValuesSensor, createSelectPadValuesSensors } from '../actions/padValues';
+} from '../slices/padConfig';
+import { createSelectPadValuesSensor, createSelectPadValuesSensors } from '../slices/padValues';
 import { useCallback, useMemo } from 'react';
 
 const panelHeight = 500;

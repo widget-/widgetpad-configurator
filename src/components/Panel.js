@@ -1,6 +1,6 @@
 import * as React from 'react';
 import { useSelector } from 'react-redux';
-import { selectSensorsCount } from '../actions/padConfig';
+import { selectSensorsCount } from '../slices/padConfig';
 
 import Sensor from './Sensor';
 
