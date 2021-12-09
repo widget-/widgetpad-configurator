@@ -1,30 +1,68 @@
-import { createSlice } from '@reduxjs/toolkit';
+import { createSelector, createSlice } from '@reduxjs/toolkit';
 
 const padConfigSlice = createSlice({
   name: 'padConfig',
   initialState: {},
   reducers: {
     setPadConfig(state, action) {
-      state = action.payload;
+      for (const [key, value] of Object.entries(action.payload)) {
+        state[key] = value;
+      }
+    },
+    clearPadConfig(state, action) {
+      for (const key of Object.keys(state)) {
+        state[key] = undefined;
+      }
     },
     setPadThreshold(state, action) {
-      state.panels[action.panelIndex].sensors[action.sensorIndex].threshold = action.threshold;
+      state.panels[action.payload.panelIndex].sensors[action.payload.sensorIndex].threshold = action.payload.threshold;
     },
     updatePadConfigFromSettings(state, action) {
       state.general = state.general ?? {};
       state.general.name = action.payload.name;
-      state.panels = [...action.payload.panels];
-      state.buttons = [...action.payload.buttons];
+      state.panels = action.payload.panels;
+      state.buttons = action.payload.buttons;
+    },
+    restoreBackupPadConfig(state, action) {
+      for (const key of Object.keys(state)) {
+        state[key] = undefined;
+      }
+
+      for (const key of Object.keys(action.payload)) {
+        state[key] = action.payload[key];
+      }
     }
   }
 });
 
 export const selectPadConfig = (state) => state.padConfig;
 export const selectPadName = (state) => state.padConfig.general?.name;
+export const selectPanelsCount = (state) => state.padConfig.panels?.length ?? 0;
+export const selectConfigPanels = (state) => state.padConfig.panels ?? [];
+export const selectSensorsCount = (state) => state.padConfig.panels?.[0]?.sensors?.length ?? 0;
+
+export const createSelectPadConfigSensors = () =>
+  createSelector([
+    selectPadConfig,
+    (state, panelIndex) => panelIndex
+  ], (values, panelIndex) => values.panels?.[panelIndex]?.sensors ?? []);
+export const createSelectPadConfigSensorThreshold = () =>
+  createSelector(
+    [selectPadConfig, (state, options) => options],
+    (config, options) =>
+      config.panels[options.panelIndex]?.sensors?.[options.sensorIndex]?.threshold ?? 0
+  );
+
 
 // Extract the action creators object and the reducer
 const { actions, reducer } = padConfigSlice;
 // Extract and export each action creator by name
-export const { getPadConfig, setPadConfig, setPadThreshold, updatePadConfigFromSettings } = actions;
+export const {
+  setPadConfig,
+  clearPadConfig,
+  setPadThreshold,
+  updatePadConfigFromSettings,
+  restoreBackupPadConfig
+} = actions;
 // Export the reducer, either as a default or named export
 export default reducer;

@@ -1,69 +1,49 @@
 import * as React from 'react';
 
+import { useEffect, useState } from 'react';
+import { useSelector } from 'react-redux';
+
 import Select from '@mui/material/Select';
 import { IconButton, MenuItem } from "@mui/material";
 import { Refresh } from "@mui/icons-material";
 
+import { selectPadName } from '../actions/padConfig';
 
-class SerialSelector extends React.Component {
-  /**
-   * @type {{serialConnection: ?SerialConnection}}
-   */
-  static defaultProps = {
-    serialConnection: null,
-    padName: null
+/**
+ * @param props
+ * @property {?SerialConnection} serialConnection
+ * @return {Promise<void>|boolean|*}
+ */
+function SerialSelector(props) {
+  const [ports, setPorts] = useState([]);
+  const [currentPort, setCurrentPort] = useState("");
+
+  const padName = useSelector(selectPadName);
+
+  useEffect(() => refresh(), []);
+
+  const onSelect = ($event) => {
+    setCurrentPort($event.target.value);
+    return props.serialConnection?.setPort($event.target.value);
   };
 
-  constructor(props) {
-    super(props);
-    this.state = {
-      ports: [],
-      currentPort: ""
-    };
-  }
+  const refresh = async () => {
+    if (!props.serialConnection) return;
+    let _ports = await props.serialConnection.listPorts();
 
-  shouldComponentUpdate(nextProps: Readonly<P>, nextState: Readonly<S>, nextContext: any): boolean {
-    return (this.state.currentPort !== nextState.currentPort) ||
-      (this.props.padName !== nextProps.padName) ||
-      (this.state.ports.reduce((prev, curr, idx) => prev || curr !== nextState.ports[idx], false));
-  }
-
-  componentDidMount() {
-    // send off untracked async function in the background
-    void (() => this.refresh())();
-  }
-
-  onSelect($event) {
-    this.setState({
-      currentPort: $event.target.value
-    });
-    return this.props.serialConnection?.setPort($event.target.value);
-  }
-
-  refresh = async () => {
-    if (!this.props.serialConnection) return;
-    let ports = await this.props.serialConnection.listPorts();
-
-    if (this.state.currentPort === "" && ports?.length > 0) {
-      await this.props.serialConnection?.setPort(ports[0].path);
-      this.setState({
-        currentPort: ports[0].path,
-        ports
-      });
-    } else if (ports?.length === 0 || !ports) {
-      await this.props.serialConnection?.disconnect();
-      this.setState({
-        currentPort: "",
-        ports
-      });
-    } else {
-      this.setState({ ports });
+    if (currentPort === "" && _ports?.length > 0) {
+      await props.serialConnection?.setPort(_ports[0].path);
+      setCurrentPort(_ports[0].path);
+    } else if (_ports?.length === 0 || !_ports) {
+      await props.serialConnection?.disconnect();
+      setCurrentPort("");
     }
+    setPorts(_ports);
   };
 
-  renderValue = (selected) => {
-    if (this.props.padName) {
-      return this.props.padName;
+  const renderValue = (selected) => {
+    if (padName) {
+      return padName;
     } else if (!selected) {
       return <div>No Serial devices detected</div>;
     }
@@ -71,34 +51,32 @@ class SerialSelector extends React.Component {
     return selected;
   };
 
-  render = () => {
-    return (
-      <div>
-        <Select variant="standard"
-                value={ this.state.currentPort }
-                onSelect={ this.onSelect }
-                displayEmpty={ true }
-                placeholder="Select a port"
-                sx={ {
-                  minWidth: 150,
-                  typography: "h6"
-                } }
-                renderValue={ this.renderValue }>
-          { this.state?.ports?.map?.((port, i) =>
-            <MenuItem value={ port?.path } key={ port?.path ?? i }>
-              { port?.path }
-            </MenuItem>
-          ) }
-        </Select>
+  return (
+    <>
+      <Select variant="standard"
+              value={ currentPort }
+              onSelect={ onSelect }
+              displayEmpty={ true }
+              placeholder="Select a port"
+              sx={ {
+                minWidth: 150,
+                typography: "h6"
+              } }
+              renderValue={ renderValue }>
+        { ports.map?.((port, i) =>
+          <MenuItem value={ port?.path } key={ port?.path ?? i }>
+            { port?.path }
+          </MenuItem>
+        ) }
+      </Select>
 
-        <IconButton
-          size="large"
-          onClick={ this.refresh }>
-          <Refresh/>
-        </IconButton>
-      </div>
-    );
-  };
+      <IconButton
+        size="large"
+        onClick={ refresh }>
+        <Refresh/>
+      </IconButton>
+    </>
+  );
 }
 
-export default SerialSelector;
+export default React.memo(SerialSelector);

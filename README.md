@@ -2,7 +2,8 @@
 
 ## Description
 
-Configures a dance pad running `widgetpad-firmware` or similar. It is currently in "very beta" status.
+Configures a dance pad running [widgetpad-firmware](https://github.com/widget-/widgetpad-firmware) or similar. It is
+currently in "very beta" status.
 
 Built with Electron and React.
 
@@ -23,19 +24,23 @@ Note: I haven't tried this on a clean setup yet.
 
 ## Roadmap / Todo
 
+See the [project](https://github.com/widget-/widgetpad-configurator/projects/1) page
+
 * Features
     * [x] Electron and React
     * [x] SerialPort connection handling
     * [x] Multiple port compatibility
+    * [x] Edit thresholds
     * [x] Panel value and threshold UI
     * [x] Multiple sensors per panel
-    * [ ] Edit thresholds
-    * [ ] Save configuration to device
-    * [ ] Pad settings page
+    * [x] Pad settings page
+    * [ ] Save configuration to file (can be used as profiles)
     * [ ] Save pad settings to on-device storage
+    * [ ] App settings page
+
 * Code quality
+    * [x] Use Redux
     * [ ] Use react-router (may be unneccessary)
     * [ ] Convert JS to Typescript
-    * [ ] Use Redux
     * [ ] Overdocument everything
     * [ ] Find all unused leftover modules that `create-react-app` left me
