@@ -5,6 +5,7 @@ const padConfigSlice = createSlice({
   initialState: {},
   reducers: {
     setPadConfig(state, action) {
+      state.backupConfig = {};
       for (const [key, value] of Object.entries(action.payload)) {
         state[key] = value;
       }
@@ -23,14 +24,25 @@ const padConfigSlice = createSlice({
       state.panels = action.payload.panels;
       state.buttons = action.payload.buttons;
     },
+    backupPadConfig(state, action) {
+      for (const [key, value] of Object.entries(action.payload)) {
+        if (key !== 'backupConfig') {
+          state.backupConfig[key] = value;
+        }
+      }
+    },
     restoreBackupPadConfig(state, action) {
       for (const key of Object.keys(state)) {
-        state[key] = undefined;
+        if (key !== 'backupConfig') {
+          state[key] = undefined;
+        }
       }
 
-      for (const key of Object.keys(action.payload)) {
+      for (const key of Object.keys(state.backupConfig)) {
         state[key] = action.payload[key];
       }
+
+      state.backupConfig = {};
     }
   }
 });
@@ -62,6 +74,7 @@ export const {
   clearPadConfig,
   setPadThreshold,
   updatePadConfigFromSettings,
+  backupPadConfig,
   restoreBackupPadConfig
 } = actions;
 // Export the reducer, either as a default or named export

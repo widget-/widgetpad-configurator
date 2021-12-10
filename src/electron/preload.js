@@ -53,6 +53,11 @@ contextBridge.exposeInMainWorld('ipc_serial', {
   /** @param {(SerialData) => void} handler */
   setupSerialResponseHandler: function (handler) {
     ipcRenderer.on('serial-receive-data', (_, data) => handler(data));
+  },
+
+  /** @param {(SerialData) => void} handler */
+  setupSerialUnexpectedDisconnectHandler: function (handler) {
+    ipcRenderer.on('serial-unexpected-close', (_, data) => handler(data));
   }
 
 });

@@ -3,7 +3,7 @@ import * as React from 'react';
 import { useCallback, useMemo } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 
-import { Slider } from "@mui/material";
+import { IconButton, Slider } from "@mui/material";
 
 import {
   createSelectPadConfigSensorThreshold,
@@ -33,6 +33,8 @@ function Sensor(props) {
   const isEditing = useSelector(selectIsEditing);
   const panelHeight = useSelector(selectPanelHeight);
 
+  const MemoizedSlider = useMemo(() => React.memo(Slider), []);
+
   const selectPadConfigSensorThreshold = useMemo(createSelectPadConfigSensorThreshold, []);
   const threshold = useSelector((state) => {
       return selectPadConfigSensorThreshold(state, {
@@ -57,7 +59,7 @@ function Sensor(props) {
       sensorIndex: props.sensorIndex,
       threshold: $event.target.value
     }));
-  }, [props.panelIndex, props.sensorIndex]);
+  }, [props.panelIndex, props.sensorIndex, dispatch]);
 
   return <div key={ props.sensorIndex } style={ {
     display: "inline-block",
@@ -75,47 +77,53 @@ function Sensor(props) {
       { value }<br/>
       ({ threshold })
     </div>
-    <Slider orientation="vertical"
-            max={ props.max }
-            value={ threshold ?? defaultThreshold }
-            onChange={ handleOnChange }
-            style={ {
-              height: panelHeight,
-              width: `calc(100% - ${ (props.first ? 10 : 0) + (props.last ? 10 : 0) }px)`
-            } }
-            sx={ {
-              mt: 2,
-              p: 0,
-              ml: props.first ? "10px" : 0,
-              mr: props.last ? "10px" : 0,
-              borderTopLeftRadius: props.first ? "12px" : 0,
-              borderBottomLeftRadius: props.first ? "12px" : 0,
-              borderTopRightRadius: props.last ? "12px" : 0,
-              borderBottomRightRadius: props.last ? "12px" : 0,
-              '& .MuiSlider-rail': {
-                backgroundColor: props.editing ? "secondary.500" : "secondary.700"
-                , width: "100%"
-              },
-              '& .MuiSlider-track': {
-                backgroundColor: pressed ? "primary.main" : "primary.900",
-                height: `${ value / props.max * 100 }% !important`,
-                width: "100%",
-                border: "none",
-                minHeight: "12px",
-                transition: "none",
-                display: "block"
-              },
-              '& .MuiSlider-thumb': {
-                width: "100%",
-                height: "4px",
-                borderRadius: 0
-              }
-            } }
-            disabled={ !isEditing }
-            valueLabelDisplay="auto"
-            track={ false }
-    />
+    <MemoizedSlider orientation="vertical"
+                    max={ props.max }
+                    value={ threshold ?? defaultThreshold }
+                    onChange={ handleOnChange }
+                    style={ {
+                      height: panelHeight,
+                      width: `calc(100% - ${ (props.first ? 10 : 0) + (props.last ? 10 : 0) }px)`
+                    } }
+                    sx={ {
+                      mt: 2,
+                      p: 0,
+                      ml: props.first ? "10px" : 0,
+                      mr: props.last ? "10px" : 0,
+                      borderTopLeftRadius: props.first ? "12px" : 0,
+                      borderBottomLeftRadius: props.first ? "12px" : 0,
+                      borderTopRightRadius: props.last ? "12px" : 0,
+                      borderBottomRightRadius: props.last ? "12px" : 0,
+                      '& .MuiSlider-rail': {
+                        backgroundColor:
+                          props.editing ? "secondary.500" : "secondary.700", width: "100%"
+                      },
+                      '& .MuiSlider-track': {
+                        backgroundColor: pressed ? "primary.main" : "primary.900",
+                        height: `${ value / props.max * 100 }% !important`,
+                        width: "100%",
+                        border: "none",
+                        minHeight: "12px",
+                        transition: "none",
+                        display: "block"
+                      },
+                      '& .MuiSlider-thumb': {
+                        width: "100%",
+                        height: "4px",
+                        borderRadius: 0
+                      }
+                    } }
+                    disabled={ !isEditing }
+                    valueLabelDisplay="auto"
+                    track={ false }/>
   </div>;
 }
 
-export default React.memo(Sensor);
+export default React.memo(Sensor, (prevProps, nextProps) => {
+  return prevProps.first === nextProps.first &&
+    prevProps.last === nextProps.last &&
+    prevProps.last === nextProps.last &&
+    prevProps.panelIndex === nextProps.panelIndex &&
+    prevProps.sensorIndex === nextProps.sensorIndex &&
+    prevProps.max === nextProps.max;
+});

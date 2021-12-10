@@ -1,6 +1,6 @@
 import * as React from 'react';
 
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { useSelector } from 'react-redux';
 
 import Select from '@mui/material/Select';
@@ -20,14 +20,13 @@ function SerialSelector(props) {
 
   const padName = useSelector(selectPadName);
 
-  useEffect(() => refresh(), []);
 
   const onSelect = ($event) => {
     setCurrentPort($event.target.value);
     return props.serialConnection?.setPort($event.target.value);
   };
 
-  const refresh = async () => {
+  const refresh = useCallback(async () => {
     if (!props.serialConnection) return;
     let _ports = await props.serialConnection.listPorts();
 
@@ -39,7 +38,9 @@ function SerialSelector(props) {
       setCurrentPort("");
     }
     setPorts(_ports);
-  };
+  }, [currentPort, props.serialConnection]);
+
+  useEffect(() => refresh(), [refresh]);
 
   const renderValue = (selected) => {
     if (padName) {

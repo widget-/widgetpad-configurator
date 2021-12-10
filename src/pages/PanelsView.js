@@ -4,7 +4,7 @@ import { selectConfigPanels } from '../slices/padConfig';
 import { useSelector } from 'react-redux';
 
 
-function Main(props) {
+function PanelsView(props) {
   const panels = useSelector(selectConfigPanels);
 
   return <div style={ { display: "flex", flexWrap: "wrap", padding: "0 10px" } }>
@@ -20,4 +20,4 @@ function Main(props) {
     }</div>;
 }
 
-export default React.memo(Main);
+export default React.memo(PanelsView);

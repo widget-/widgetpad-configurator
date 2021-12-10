@@ -35,6 +35,10 @@ class SerialConnection {
     this.onConnectionStateChangeCallback();
   }
 
+  unexpectedDisconnect() {
+    this.onConnectionStateChangeCallback({ unexpected: true });
+  }
+
   async connect() {
     if (this.connected) {
       await this.disconnect();
@@ -65,6 +69,18 @@ class SerialConnection {
 
   addSerialDataHandler(handler) {
     window.ipc_serial.setupSerialResponseHandler((data) => {
+      // convert to object if possible
+      try {
+        let o = JSON.parse(data);
+        handler(o);
+      } catch {
+        handler(data);
+      }
+    });
+  }
+
+  addSerialUnexpectedDisconnectHandler(handler) {
+    window.ipc_serial.setupSerialUnexpectedDisconnectHandler((data) => {
       // convert to object if possible
       try {
         let o = JSON.parse(data);

@@ -21,7 +21,7 @@ function setupSerialHandler() {
 
   let boundSerialEventListeners = [];
 
-  ipcMain.on("serial-connect-request", async (event, arg) => {
+  ipcMain.on("serial-connect-request", async (event, port) => {
       if (serialConnection?.isOpen) {
         try {
           console.log(`Closing existing port ${ serialConnection.path }`);
@@ -31,7 +31,7 @@ function setupSerialHandler() {
         }
       }
 
-      serialConnection = new SerialPort(arg);
+      serialConnection = new SerialPort(port, { baudRate: 2000000 });
       try {
         await Promise.race([
           new Promise((resolve) => serialConnection.once('open', resolve)),
@@ -40,12 +40,14 @@ function setupSerialHandler() {
 
         readlineParser = serialConnection.pipe(new Readline());
 
-        const listener = (data) => {
-          console.log("Received data", data);
+        const dataListener = (data) => {
+          // console.log("Received data", data);
           event.sender.send("serial-receive-data", data);
         };
-        readlineParser.on("data", listener);
-        boundSerialEventListeners.push({ eventType: 'data', listener: listener });
+        readlineParser.on("data", dataListener);
+        boundSerialEventListeners.push({ eventType: 'data', listener: dataListener });
+
+        readlineParser.on("close", () => event.sender.send("serial-unexpected-close"));
 
         event.sender.send('serial-connect-response', { response: "ok" });
       } catch (err) {
@@ -58,6 +60,11 @@ function setupSerialHandler() {
   ipcMain.on("serial-disconnect-request", async (event) => {
     if (serialConnection?.isOpen) {
       try {
+        for (const { eventType, listener } of boundSerialEventListeners) {
+          readlineParser.off(eventType, listener);
+        }
+
+        boundSerialEventListeners = [];
         console.log(`Closing existing port ${ serialConnection.path }`);
         try {
           serialConnection.close();
@@ -65,10 +72,6 @@ function setupSerialHandler() {
           console.error('Couldn\'t close serial connection: ', err);
         }
 
-        for (const { eventType, listener } of boundSerialEventListeners) {
-          readlineParser.off(eventType, listener);
-        }
-        boundSerialEventListeners = [];
         event.sender.send('serial-disconnect-response');
       } catch (err) {
         console.error('Couldn\'t close serial connection: ', err);
@@ -80,7 +83,7 @@ function setupSerialHandler() {
   ipcMain.on("serial-data-request", async (event, arg) => {
     if (serialConnection) {
       try {
-        console.log('Sending data:', arg);
+        // console.log('Sending data:', arg);
         const data = typeof arg === 'string' ? arg : JSON.stringify(arg);
         serialConnection.write(Buffer.from(data));
         event.sender.send('serial-data-response');
