@@ -27,7 +27,6 @@ function Panel(props) {
           panelIndex={ panelIndex }
           sensorIndex={ sensorIndex }
           max={ props.max }
-          editing={ props.editing }
           first={ first }
           last={ last }/>;
       })

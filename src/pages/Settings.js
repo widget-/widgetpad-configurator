@@ -137,7 +137,7 @@ class Settings extends React.Component {
         }
       }
     }
-    
+
     return panels;
   };
 
@@ -215,6 +215,17 @@ class Settings extends React.Component {
   };
 
   render = () => {
+    const heightCappedSelectProps = {
+      MenuProps: {
+        PaperProps: {
+          style: {
+            maxHeight: 400,
+            width: '20ch'
+          }
+        }
+      }
+    };
+
     return (
       <>
         <IconButton
@@ -405,7 +416,8 @@ class Settings extends React.Component {
                                   microcontroller="teensy40"
                                   showDigitalPins={ false }
                                   onChange={ ($event) => this.handleFormValueUpdate($event, panelIndex, sensorIndex) }
-                                  selectProps={ { sx: { width: "50%" } } }
+                                  width="50%"
+                                  SelectProps={ heightCappedSelectProps }
                                 />
                               )
                             }
@@ -448,7 +460,8 @@ class Settings extends React.Component {
                               showDigitalPins={ true }
                               showAnalogPins={ true }
                               onChange={ ($event) => this.handleFormValueUpdate($event, buttonIndex) }
-                              selectProps={ { sx: { width: "50%" } } }
+                              width="50%"
+                              SelectProps={ heightCappedSelectProps }
                             />
                           </Box>
                         )

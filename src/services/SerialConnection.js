@@ -1,5 +1,6 @@
 import typeof SerialPort from 'serialport';
 
+let serialConnection = null;
 
 class SerialConnection {
   /** @type string */
@@ -9,7 +10,7 @@ class SerialConnection {
 
   connected: false;
   onConnectionStateChangeCallback: () => {};
-  
+
   async listPorts(): Promise<SerialPort.PortInfo[]> {
     try {
       this.availablePorts = await window.ipc_serial.listSerialPorts() ?? [];
@@ -75,4 +76,11 @@ class SerialConnection {
   }
 }
 
-export default SerialConnection;
+function getSerialConnection() {
+  if (!serialConnection) {
+    serialConnection = new SerialConnection();
+  }
+  return serialConnection;
+}
+
+export default getSerialConnection;

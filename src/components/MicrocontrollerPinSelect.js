@@ -12,7 +12,8 @@ class MicrocontrollerPinSelect extends React.Component {
     label: '',
     value: 0,
     microcontroller: '',
-    selectProps: {}
+    SelectProps: {},
+    width: "20ch"
   };
 
   static pins = {
@@ -46,8 +47,8 @@ class MicrocontrollerPinSelect extends React.Component {
         label={ this.props.label }
         margin="normal"
         onChange={ this.onSelect }
-        sx={ { width: "20ch" } }
-        { ...this.props.selectProps }
+        sx={ { width: this.props.width } }
+        SelectProps={ this.props.SelectProps }
       >
         {
           this.props.showAnalogPins &&

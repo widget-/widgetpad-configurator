@@ -1,21 +1,25 @@
 import * as React from 'react';
-import { Slider } from "@mui/material";
+
+import { useCallback, useMemo } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
+
+import { Slider } from "@mui/material";
+
 import {
-  createSelectPadConfigSensors,
-  createSelectPadConfigSensorThreshold, selectSensorsCount,
+  createSelectPadConfigSensorThreshold,
+  selectSensorsCount,
   setPadThreshold
 } from '../slices/padConfig';
-import { createSelectPadValuesSensor, createSelectPadValuesSensors } from '../slices/padValues';
-import { useCallback, useMemo } from 'react';
+import { createSelectPadValuesSensor } from '../slices/padValues';
+import {
+  selectIsEditing,
+  selectPanelHeight
+} from '../slices/appSettings';
 
-const panelHeight = 500;
 // this is needed for Slider.value because React will think
 // that the slider is an uncontrolled component before
 // its props are properly initialized:
 const defaultThreshold = 100;
-
-// class Panel extends React.Component {
 
 /**
  * @param {object} props
@@ -26,6 +30,8 @@ function Sensor(props) {
   const dispatch = useDispatch();
 
   const sensorsCount = useSelector(selectSensorsCount);
+  const isEditing = useSelector(selectIsEditing);
+  const panelHeight = useSelector(selectPanelHeight);
 
   const selectPadConfigSensorThreshold = useMemo(createSelectPadConfigSensorThreshold, []);
   const threshold = useSelector((state) => {
@@ -105,7 +111,7 @@ function Sensor(props) {
                 borderRadius: 0
               }
             } }
-            disabled={ !props.editing }
+            disabled={ !isEditing }
             valueLabelDisplay="auto"
             track={ false }
     />

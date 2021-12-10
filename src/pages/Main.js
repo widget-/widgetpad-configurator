@@ -14,7 +14,6 @@ function Main(props) {
         return <Panel
           max={ 1024 }
           key={ panelIndex }
-          editing={ props.editing }
           panelIndex={ panelIndex }
         />;
       })
