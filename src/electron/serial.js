@@ -31,12 +31,14 @@ function setupSerialHandler() {
         }
       }
 
-      serialConnection = new SerialPort(port, { baudRate: 2000000 });
       try {
+        serialConnection = new SerialPort(port, { baudRate: 75 });
         await Promise.race([
           new Promise((resolve) => serialConnection.once('open', resolve)),
           new Promise((_, reject) => serialConnection.once('error', reject))
         ]);
+
+        // console.log(`Baud rate is ${ serialConnection. }`);
 
         readlineParser = serialConnection.pipe(new Readline());
 

@@ -1,15 +1,28 @@
 import typeof SerialPort from 'serialport';
 
+const framerate = 60;
+
 let serialConnection = null;
 
 class SerialConnection {
-  /** @type string */
+  /** @type ?string */
   currentPort = null;
   /** @type string[] */
   availablePorts = [];
 
   connected: false;
   onConnectionStateChangeCallback: () => {};
+
+  constructor() {
+    const requestValues = () => {
+      if (!this.connected)
+        return;
+      this.sendData({
+        message: "requestValues"
+      });
+    };
+    setInterval(requestValues, 1000 / framerate);
+  }
 
   async listPorts(): Promise<SerialPort.PortInfo[]> {
     try {
@@ -24,8 +37,7 @@ class SerialConnection {
   /** @param {string} port */
   async setPort(port) {
     console.log(`Serial port set to ${ port }`);
-    this.currentPort = port;
-    await this.connect();
+    await this.connect(port);
   }
 
   async disconnect() {
@@ -39,19 +51,22 @@ class SerialConnection {
     this.onConnectionStateChangeCallback({ unexpected: true });
   }
 
-  async connect() {
+  /** @param {string} port */
+  async connect(port) {
     if (this.connected) {
       await this.disconnect();
     }
-    console.log(`Connecting to Serial port ${ this.currentPort }`);
-    const result = await window.ipc_serial.openSerialConnection(this.currentPort);
+    console.log(`Connecting to Serial port ${ port }`);
+    const result = await window.ipc_serial.openSerialConnection(port);
     if (result.response === 'ok') {
       console.log('Connected');
       this.connected = true;
+      this.currentPort = port;
       this.onConnectionStateChangeCallback();
     } else {
       console.error('Error when connecting');
       console.error(result);
+      throw new Error(`Error when connecting to serialPort: ${ result }`);
     }
   }
 
@@ -64,6 +79,7 @@ class SerialConnection {
   }
 
   async sendData(data) {
+    // console.log('[serialdata] sending', data);
     await window.ipc_serial.sendSerialData(JSON.stringify(data));
   }
 

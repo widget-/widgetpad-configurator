@@ -21,28 +21,48 @@ function SerialSelector(props) {
   const padName = useSelector(selectPadName);
 
 
-  const onSelect = ($event) => {
-    setCurrentPort($event.target.value);
-    return props.serialConnection?.setPort($event.target.value);
-  };
+  const handlePortConnectionError = useCallback(async (err) => {
+    console.log('Port connection error', err);
+  }, []);
+
+  const onSelectPort = useCallback(async ($event) => {
+    console.log(`Trying to select ${ $event.target.value }...`);
+    try {
+      await props.serialConnection?.setPort($event.target.value);
+      setCurrentPort($event.target.value);
+    } catch (e) {
+      console.log(e); // show popup later...
+    }
+  }, [props.serialConnection]);
 
   const refresh = useCallback(async () => {
     if (!props.serialConnection) return;
-    let _ports = await props.serialConnection.listPorts();
+    let _ports = await props.serialConnection?.listPorts();
 
     if (currentPort === "" && _ports?.length > 0) {
-      await props.serialConnection?.setPort(_ports[0].path);
-      setCurrentPort(_ports[0].path);
+      for (let port of _ports) {
+        try {
+          await props.serialConnection?.setPort(port.path);
+          setCurrentPort(port.path);
+          break;
+        } catch (err) {
+          await handlePortConnectionError(err);
+        }
+      }
     } else if (_ports?.length === 0 || !_ports) {
-      await props.serialConnection?.disconnect();
-      setCurrentPort("");
+      try {
+        await props.serialConnection?.disconnect();
+        setCurrentPort("");
+      } catch (err) {
+        await handlePortConnectionError(err);
+      }
     }
     setPorts(_ports);
-  }, [currentPort, props.serialConnection]);
+  }, [currentPort, handlePortConnectionError, props.serialConnection]);
 
-  useEffect(() => refresh(), [refresh]);
+  useEffect(refresh, [refresh]);
 
-  const renderValue = (selected) => {
+  const renderValue = useCallback((selected) => {
     if (padName) {
       return padName;
     } else if (!selected) {
@@ -50,13 +70,13 @@ function SerialSelector(props) {
     }
 
     return selected;
-  };
+  }, [padName]);
 
   return (
     <>
       <Select variant="standard"
               value={ currentPort }
-              onSelect={ onSelect }
+              onSelect={ onSelectPort }
               displayEmpty={ true }
               placeholder="Select a port"
               sx={ {
@@ -80,4 +100,5 @@ function SerialSelector(props) {
   );
 }
 
-export default React.memo(SerialSelector);
+// export default React.memo(SerialSelector);
+export default SerialSelector;

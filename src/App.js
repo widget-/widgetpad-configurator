@@ -39,7 +39,9 @@ import {
 import {
   addUiFrameTime,
   selectDarkMode,
-  selectIsEditing, selectUiFps,
+  selectIsEditing,
+  selectUiRxFps,
+  selectUiTxFps,
   setIsEditing
 } from './slices/appSettings';
 
@@ -53,8 +55,6 @@ const serialConnection = getSerialConnection();
 function App() {
   const dispatch = useDispatch();
 
-  const framerate = 60;
-
   const [serialConnected, setSerialConnected] = useState(false);
   const [padConfigBackupState, setPadConfigBackupState] = useState({});
 
@@ -65,7 +65,30 @@ function App() {
   const isEditing = useSelector(selectIsEditing);
   const darkMode = useSelector(selectDarkMode);
 
-  let timer = null;
+  // useEffect(() => {
+  //   let previousTime = Date.now();
+  //   const timer = setInterval(async () => {
+  //     const now = Date.now();
+  //
+  //     if (!serialConnection.isConnected()) return;
+  //
+  //     // await serialConnection.sendData({
+  //     serialConnection.sendData({
+  //       message: "requestValues"
+  //     });
+  //     const now2 = Date.now();
+  //     console.info(`[serialtiming] Took ${ now2 - now } ms to request values`);
+  //     console.info(`[serialtiming] ${ now2 - previousTime } since previous request`);
+  //     previousTime = now2;
+  //     dispatch(addUiFrameTime('tx'));
+  //   }, Math.floor(1000 / framerate)); // 60fps
+  //   console.info(`[serialtimer] setting up timer ${ timer }`);
+  //
+  //   return () => {
+  //     console.info(`[serialtimer] clearing timer ${ timer }`);
+  //     clearInterval(timer);
+  //   };
+  // }, [dispatch]);
 
   const serialDataHandler = useCallback((data) => {
     const message = data.message;
@@ -79,12 +102,13 @@ function App() {
       return;
     }
 
+    dispatch(addUiFrameTime('rx'));
+
     if (message === "responseValues") {
       dispatch(setPadValues({
         panels: data.panels,
         buttons: data.buttons
       }));
-      dispatch(addUiFrameTime());
     } else if (message === "responseConfig") {
       dispatch(setPadConfig(data));
     } else if (message === "loadConfigResponse") {
@@ -94,25 +118,18 @@ function App() {
         pretty: false,
         minified: false
       });
+      dispatch(addUiFrameTime('tx'));
     } else {
       console.log(message, data);
     }
   }, [dispatch]);
 
   const startSerialData = useCallback(async () => {
-    if (timer) {
-      clearInterval(timer);
-    }
     await serialConnection.sendData({
       message: "requestConfig",
       pretty: false,
       minified: false
     });
-    timer = setInterval(() => serialConnection.sendData({
-      message: "requestValues",
-      pretty: false,
-      minified: false
-    }), Math.floor(1000 / framerate)); // 60fps
   }, []);
 
   const MemoizedIconButton = useMemo(() => React.memo(IconButton), []);
@@ -123,13 +140,10 @@ function App() {
     if (serialConnection.isConnected()) {
       startSerialData();
     } else {
-      if (timer) {
-        clearInterval(timer);
-      }
       dispatch(clearPadValues());
       dispatch(clearPadConfig());
     }
-  }, [serialConnection, startSerialData]);
+  }, [dispatch, startSerialData]);
 
   const theme = useMemo(() => createTheme({
     palette: {
@@ -151,10 +165,11 @@ function App() {
     };
   }, [handleSerialConnectionStateChange, serialDataHandler]);
 
-  const uiFps = useSelector(selectUiFps);
+  const uiRxFps = useSelector(selectUiRxFps);
+  const uiTxFps = useSelector(selectUiTxFps);
 
   const handleSerialConnectButtonClick = useCallback(() => {
-    serialConnection.connect();
+    serialConnection.connect(serialConnection.currentPort);
   }, []);
 
   const handleSerialDisconnectButtonClick = useCallback(() => {
@@ -172,6 +187,7 @@ function App() {
       "message": "updateConfig",
       ...padConfig
     });
+    dispatch(addUiFrameTime('tx'));
   }, [dispatch, padConfig]);
 
   const handleCancelThresholdButtonClick = useCallback(() => {
@@ -184,25 +200,19 @@ function App() {
     await serialConnection.sendData({
       "message": "saveConfigRequest"
     });
-  }, []);
+    dispatch(addUiFrameTime('tx'));
+  }, [dispatch]);
   const handleLoadFromPadButtonClick = useCallback(async () => {
     await serialConnection.sendData({
       "message": "loadConfigRequest"
     });
-  }, []);
+    dispatch(addUiFrameTime('tx'));
+  }, [dispatch]);
 
   const handleSnackbarClose = useCallback(() => {
     setSnackbarOpen(false);
   }, []);
 
-
-  const openSettings = useCallback(() => {
-
-  }, []);
-
-  const handleAppSettingsClick = useCallback(() => {
-
-  }, []);
 
   return (
     <ThemeProvider theme={ theme }>
@@ -224,7 +234,15 @@ function App() {
           </React.Fragment> }
         />
 
-        <Paper style={ { width: "100%", minHeight: "100vh", margin: 0 } }>
+        <Paper style={ {
+          width: "100%",
+          minHeight: "100vh",
+          margin: 0,
+          display: "flex",
+          flex: 1,
+          flexDirection: "column",
+          alignContent: "stretch"
+        } }>
           <AppBar position="sticky">
             <Toolbar>
               <SerialSelector
@@ -253,6 +271,7 @@ function App() {
 
               {/*using this as a spacer for now*/ }
               <Typography sx={ { flex: 1 } }/>
+
               <MemoizedTooltip title="Save configuration to pad">
                 <IconButton
                   size="large"
@@ -296,7 +315,6 @@ function App() {
                 size="large"
                 color="inherit"
                 disabled={ isEditing }
-                // onClick={ handleSettingsIconClick }
                 component={ Link }
                 to="settings"
               >
@@ -304,16 +322,16 @@ function App() {
               </MemoizedIconButton>
             </Toolbar>
           </AppBar>
-          <Card>
+          <Card style={ { flex: 1 } }>
             <Routes>
               <Route path="/" element={ <PanelsView/> }/>
-              <Route path="settings" element={ <Settings/> }/>
+              <Route path="/settings" element={ <Settings/> }/>
             </Routes>
           </Card>
           <Card>
             <Typography>
               {
-                `Serial FPS: ${ uiFps?.toFixed?.(1) }`
+                `Serial FPS: ${ uiRxFps?.toFixed?.(1) } in / ${ uiTxFps?.toFixed?.(1) } out`
               }
             </Typography>
           </Card>

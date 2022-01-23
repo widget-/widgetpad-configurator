@@ -10,8 +10,6 @@ import Sensor from './Sensor';
  * @return {JSX.Element}
  */
 function Panel(props) {
-  const panelIndex = props.panelIndex;
-
   const sensorsCount = useSelector(selectSensorsCount);
 
   return <div style={ {
@@ -24,7 +22,7 @@ function Panel(props) {
 
         return <Sensor
           key={ sensorIndex }
-          panelIndex={ panelIndex }
+          panelIndex={ props.panelIndex }
           sensorIndex={ sensorIndex }
           max={ props.max }
           first={ first }

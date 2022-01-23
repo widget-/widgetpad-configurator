@@ -3,8 +3,6 @@ import * as React from 'react';
 import { useCallback, useMemo } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 
-import { IconButton, Slider } from "@mui/material";
-
 import {
   createSelectPadConfigSensorThreshold,
   selectSensorsCount,
@@ -15,6 +13,7 @@ import {
   selectIsEditing,
   selectPanelHeight
 } from '../slices/appSettings';
+import { Slider } from '@mui/material';
 
 // this is needed for Slider.value because React will think
 // that the slider is an uncontrolled component before
@@ -61,6 +60,40 @@ function Sensor(props) {
     }));
   }, [props.panelIndex, props.sensorIndex, dispatch]);
 
+  const sensorSliderSx = useMemo(() => ({
+    mt: 2,
+    p: 0,
+    ml: props.first ? "10px" : 0,
+    mr: props.last ? "10px" : 0,
+    borderTopLeftRadius: props.first ? "12px" : 0,
+    borderBottomLeftRadius: props.first ? "12px" : 0,
+    borderTopRightRadius: props.last ? "12px" : 0,
+    borderBottomRightRadius: props.last ? "12px" : 0,
+    '& .MuiSlider-rail': {
+      backgroundColor:
+        props.editing ? "secondary.500" : "secondary.700", width: "100%"
+    },
+    '& .MuiSlider-track': {
+      backgroundColor: pressed ? "primary.main" : "primary.900",
+      height: `${ value / props.max * 100 }% !important`,
+      width: "100%",
+      border: "none",
+      minHeight: "12px",
+      transition: "none",
+      display: "block"
+    },
+    '& .MuiSlider-thumb': {
+      width: "100%",
+      height: "4px",
+      borderRadius: 0
+    }
+  }), [pressed, props.editing, props.first, props.last, props.max, value]);
+
+  const sensorStyle = useMemo(() => ({
+    height: panelHeight,
+    width: `calc(100% - ${ (props.first ? 10 : 0) + (props.last ? 10 : 0) }px)`
+  }), [panelHeight, props.first, props.last]);
+
   return <div key={ props.sensorIndex } style={ {
     display: "inline-block",
     position: "relative",
@@ -72,47 +105,21 @@ function Sensor(props) {
       left: props.first ? 10 : 0,
       right: props.last ? 10 : 0,
       textAlign: "center",
-      fontSize: 24
+      fontSize: 24,
+      pointerEvents: "none",
+      userSelect: "none",
+      zIndex: 2
     } }>
       { value }<br/>
-      ({ threshold })
+      ({ threshold })<br/>
+      { pressed ? 'Pressed' : '' }
     </div>
     <MemoizedSlider orientation="vertical"
                     max={ props.max }
                     value={ threshold ?? defaultThreshold }
                     onChange={ handleOnChange }
-                    style={ {
-                      height: panelHeight,
-                      width: `calc(100% - ${ (props.first ? 10 : 0) + (props.last ? 10 : 0) }px)`
-                    } }
-                    sx={ {
-                      mt: 2,
-                      p: 0,
-                      ml: props.first ? "10px" : 0,
-                      mr: props.last ? "10px" : 0,
-                      borderTopLeftRadius: props.first ? "12px" : 0,
-                      borderBottomLeftRadius: props.first ? "12px" : 0,
-                      borderTopRightRadius: props.last ? "12px" : 0,
-                      borderBottomRightRadius: props.last ? "12px" : 0,
-                      '& .MuiSlider-rail': {
-                        backgroundColor:
-                          props.editing ? "secondary.500" : "secondary.700", width: "100%"
-                      },
-                      '& .MuiSlider-track': {
-                        backgroundColor: pressed ? "primary.main" : "primary.900",
-                        height: `${ value / props.max * 100 }% !important`,
-                        width: "100%",
-                        border: "none",
-                        minHeight: "12px",
-                        transition: "none",
-                        display: "block"
-                      },
-                      '& .MuiSlider-thumb': {
-                        width: "100%",
-                        height: "4px",
-                        borderRadius: 0
-                      }
-                    } }
+                    style={ sensorStyle }
+                    sx={ sensorSliderSx }
                     disabled={ !isEditing }
                     valueLabelDisplay="auto"
                     track={ false }/>
